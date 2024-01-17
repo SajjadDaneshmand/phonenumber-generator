@@ -161,3 +161,4 @@ cython_debug/
 docs/
 config.json
 prefix.json
+*.xlsx
