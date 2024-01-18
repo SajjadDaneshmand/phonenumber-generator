@@ -5,9 +5,9 @@ import os
 from PyQt5.QtWidgets import QMainWindow, QApplication, QMessageBox
 
 # internal
-from .interface import Ui_MainWindow
-from . import settings
-from . import tools
+from src.interface import Ui_MainWindow
+from src import settings
+from src import tools
 
 
 class MainWindow(QMainWindow):
@@ -143,12 +143,12 @@ class MainWindow(QMainWindow):
 if __name__ == '__main__':
     configs = settings.JsonConfigHandler()
     if not os.path.exists(settings.CONFIG_FILE):
-        from . import setup
+        from src import setup
 
     configs.load_config()
 
     if not configs.get_config('setup-run') == 'true':
-        from . import setup
+        from src import setup
 
     configs.load_config()
 

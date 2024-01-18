@@ -2,7 +2,7 @@ import csv
 import os
 
 # internal
-import settings
+from . import settings
 
 with open(settings.CSV_FILE, 'r') as file:
     csv_reader = csv.reader(file)
