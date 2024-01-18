@@ -84,7 +84,7 @@ class MainWindow(QMainWindow):
             settings.BASE_DIR,
             settings.docs_folder,
             settings.star_folder,
-            f'{current_datetime.strftime("%Y-%m-%d %H-%M-%S")} {phonenumber.replace('*', 'Q')}.{settings.EXCEL_SUFFIX}'
+            f'{current_datetime.strftime("%Y-%m-%d %H-%M-%S")} {phonenumber.replace("*", "Q")}.{settings.EXCEL_SUFFIX}'
         )
         excel = settings.ExcelHandler(excel_filename)
         excel.create_workbook()
