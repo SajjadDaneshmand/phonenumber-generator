@@ -43,3 +43,10 @@ def replace_nums(main_phonenumber: str, replacement: str, indexes: list):
     for index, i in enumerate(replacement):
         main_phonenumber[indexes[index]] = i
     return ''.join(main_phonenumber)
+
+
+def divide_number(number, range_num):
+    divider = number // range_num
+    remainder = number % range_num
+    return divider, remainder
+print(divide_number(3, 10))

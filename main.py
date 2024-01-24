@@ -2,7 +2,10 @@ from datetime import datetime
 import sys
 import os
 
-from PyQt5.QtWidgets import QMainWindow, QApplication, QMessageBox
+from PyQt5.QtWidgets import (
+    QMainWindow, QApplication, QMessageBox, QProgressBar, QDialog, QLabel, QVBoxLayout
+)
+from PyQt5.QtCore import QTime
 
 # internal
 from src.interface import Ui_MainWindow
@@ -18,7 +21,7 @@ class MainWindow(QMainWindow):
         self.ui.numberSpinBox.setMaximum(1000000000)
 
         # btn connection
-        self.ui.numberConfirmButton.clicked.connect(self.process_from_number)
+        self.ui.numberConfirmButton.clicked.connect(self.process_from_number_patcher)
         self.ui.phonenumberConfirmButton.clicked.connect(self.process_from_star)
 
         # comboBox data
@@ -29,10 +32,18 @@ class MainWindow(QMainWindow):
         self.configs = settings.JsonConfigHandler(settings.PREFIXES_FILE)
         self.configs.load_config()
 
-    def process_from_number(self):
+    def process_from_number_patcher(self):
         # Get data from app
         number = self.ui.numberSpinBox.value()
         prefix = self.ui.prefixComboBox.currentText()
+
+        range_val = 50000
+        divide_num = tools.divide_number(number, range_val)
+
+        for i in range(divide_num[0]):
+            self._process_from_number(range_val, prefix)
+
+    def _process_from_number(self, number, prefix):
 
         # time
         current_datetime = datetime.now()
@@ -62,6 +73,10 @@ class MainWindow(QMainWindow):
                 excel.write_data(prefix + raw_phonenumber)
             else:
                 raw_phonenumber = tools.general_generator(raw_phonenumber)
+                main_phonenumber = prefix + raw_phonenumber
+                if len(main_phonenumber) > 11:
+                    return self.success_message('All phonenumber of this prefix created!')
+
                 excel.write_data(prefix + raw_phonenumber)
         excel.save_workbook()
         excel.close_workbook()
@@ -138,6 +153,43 @@ class MainWindow(QMainWindow):
 
         # Show the success message box
         success_box.exec_()
+
+    def progress_dialog(self, message):
+        progress_dialog = ProgressBarDialog(message)
+
+        timer = QTime(progress_dialog)
+        timer.timeout.connect(progress_dialog.accept)
+        timer.start()
+
+        result = progress_dialog.exec_()
+
+
+class ProgressBarDialog(QDialog):
+    def __init__(self, message, parent=None):
+        super(ProgressBarDialog, self).__init__(parent)
+        self.message = message
+        self.init_ui()
+
+    def init_ui(self):
+        self.setWindowTitle('Progress Dialog')
+
+        # create a progress bar
+        self.progress_bar = QProgressBar(self)
+        self.progress_bar.setRange(0, 100)
+
+        # Create a label
+        self.label = QLabel(self.message, self)
+
+        # Create a layout for the dialog
+        layout = QVBoxLayout(self)
+        layout.addWidget(self.label)
+        layout.addWidget(self.progress_bar)
+
+        self.setGeometry(self.x() + 50, self.y() + 50, 300, 150)
+
+    def set_progress(self, value):
+        # Set the value of the progress bar
+        self.progress_bar.setValue(value)
 
 
 if __name__ == '__main__':
