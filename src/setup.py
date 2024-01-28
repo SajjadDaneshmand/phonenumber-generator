@@ -3,10 +3,10 @@ import os
 
 # internal
 from . import settings
+from . import tools
 
-with open(settings.CSV_FILE, 'r') as file:
-    csv_reader = csv.reader(file)
-    csv_reader = [i[0] for i in csv_reader]
+
+csv_reader = tools.read_prefix_from_csv(settings.CSV_FILE)
 
 
 prefixes = settings.JsonConfigHandler(settings.PREFIXES_FILE)

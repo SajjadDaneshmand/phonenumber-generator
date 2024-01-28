@@ -1,5 +1,6 @@
 import string
 import csv
+import gc
 
 
 def check_format(phonenumber: str):
@@ -49,4 +50,11 @@ def divide_number(number, range_num):
     divider = number // range_num
     remainder = number % range_num
     return divider, remainder
-print(divide_number(3, 10))
+
+
+def clear_ram(func):
+    def wrapper(*args, **kwargs):
+        func(*args, **kwargs)
+        gc.collect()
+    return wrapper
+

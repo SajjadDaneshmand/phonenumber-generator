@@ -2,10 +2,11 @@ from datetime import datetime
 import sys
 import os
 
+
 from PyQt5.QtWidgets import (
     QMainWindow, QApplication, QMessageBox, QProgressBar, QDialog, QLabel, QVBoxLayout
 )
-from PyQt5.QtCore import QTime
+from PyQt5.QtCore import QTimer
 
 # internal
 from src.interface import Ui_MainWindow
@@ -37,29 +38,31 @@ class MainWindow(QMainWindow):
         number = self.ui.numberSpinBox.value()
         prefix = self.ui.prefixComboBox.currentText()
 
-        range_val = 50000
+        range_val = 1000
         divide_num = tools.divide_number(number, range_val)
 
-        for i in range(divide_num[0]):
-            self._process_from_number(range_val, prefix)
+        # set progress bar
+        progress_bar = ProgressBarDialog('processing...', divide_num[0] + 1)
+        progress_bar.start_progress()
+        progress_bar.exec_()
 
-    def _process_from_number(self, number, prefix):
+        for index in range(divide_num[0]):
+            addition_name = f'Item {index}'
+            self._process_from_number(range_val, prefix, addition_name)
+            progress_bar.update_progress()
 
-        # time
-        current_datetime = datetime.now()
+        # remaining numbers
+        if divide_num[1]:
+            addition_name = f'last item'
+            self._process_from_number(divide_num[1], prefix, addition_name)
 
-        # Excel configuration
-        excel_filename = os.path.join(
-            settings.BASE_DIR,
-            settings.docs_folder,
-            settings.number_folder,
-            prefix,
-            f'{current_datetime.strftime("%Y-%m-%d %H-%M-%S")}.{settings.EXCEL_SUFFIX}'
-        )
+        self.success_message('Successfully phone number created!')
 
-        excel = settings.ExcelHandler(excel_filename)
-        excel.create_workbook()
-        excel.set_column_title(settings.COLUMN_TITLE)
+    @tools.clear_ram
+    def _process_from_number(self, number, prefix, addition_name):
+
+        excel_filename = self.filename_by_time(addition_name, prefix)
+        excel = self.excel_initialize(excel_filename)
 
         raw_phonenumber = self.configs.get_config(prefix)
 
@@ -70,20 +73,22 @@ class MainWindow(QMainWindow):
         for i in range(number):
             if raw_phonenumber.startswith('0'):
                 raw_phonenumber = tools.under_one_generator(raw_phonenumber)
-                excel.write_data(prefix + raw_phonenumber)
+                main_phonenumber = prefix + raw_phonenumber
+                excel.write_data(main_phonenumber)
             else:
                 raw_phonenumber = tools.general_generator(raw_phonenumber)
                 main_phonenumber = prefix + raw_phonenumber
                 if len(main_phonenumber) > 11:
                     return self.success_message('All phonenumber of this prefix created!')
 
-                excel.write_data(prefix + raw_phonenumber)
+                excel.write_data(main_phonenumber)
+
         excel.save_workbook()
         excel.close_workbook()
         self.configs.set_config(prefix, raw_phonenumber)
         self.configs.save_config()
-        self.success_message('Successfully phone number created!')
 
+    @tools.clear_ram
     def process_from_star(self):
         phonenumber = self.ui.phonenumberLineEdit.text()
         if not tools.check_format(phonenumber):
@@ -91,19 +96,8 @@ class MainWindow(QMainWindow):
             self.ui.phonenumberLineEdit.clear()
             return
 
-        # time
-        current_datetime = datetime.now()
-
-        # Excel configuration
-        excel_filename = os.path.join(
-            settings.BASE_DIR,
-            settings.docs_folder,
-            settings.star_folder,
-            f'{current_datetime.strftime("%Y-%m-%d %H-%M-%S")} {phonenumber.replace("*", "Q")}.{settings.EXCEL_SUFFIX}'
-        )
-        excel = settings.ExcelHandler(excel_filename)
-        excel.create_workbook()
-        excel.set_column_title(settings.COLUMN_TITLE)
+        excel_filename = self.filename_by_time(phonenumber)
+        excel = self.excel_initialize(excel_filename)
 
         counter = 0
         list_of_stars_index = []
@@ -131,6 +125,38 @@ class MainWindow(QMainWindow):
         excel.close_workbook()
         self.success_message('Successfully phone number created!')
 
+    @staticmethod
+    def excel_initialize(filename):
+        excel = settings.ExcelHandler(filename)
+        excel.create_workbook()
+        excel.set_column_title(settings.COLUMN_TITLE)
+        excel.save_workbook()
+        return excel
+
+    @staticmethod
+    def filename_by_time(addition_name, prefix: str = None):
+        # time
+        current_datetime = datetime.now()
+
+        # Excel configuration
+        if not prefix:
+            excel_filename = os.path.join(
+                settings.BASE_DIR,
+                settings.docs_folder,
+                settings.star_folder,
+                f'{current_datetime.strftime("%Y-%m-%d %H-%M-%S")} {addition_name.replace("*", "X")}.{settings.EXCEL_SUFFIX}'
+            )
+        else:
+            excel_filename = os.path.join(
+                settings.BASE_DIR,
+                settings.docs_folder,
+                settings.number_folder,
+                prefix,
+                f'{current_datetime.strftime("%Y-%m-%d %H-%M-%S")} {addition_name}.{settings.EXCEL_SUFFIX}'
+            )
+
+        return excel_filename
+
     def error_message(self, msg):
         error_box = QMessageBox()
         error_box.setIcon(QMessageBox.Critical)
@@ -154,42 +180,43 @@ class MainWindow(QMainWindow):
         # Show the success message box
         success_box.exec_()
 
-    def progress_dialog(self, message):
-        progress_dialog = ProgressBarDialog(message)
-
-        timer = QTime(progress_dialog)
-        timer.timeout.connect(progress_dialog.accept)
-        timer.start()
-
-        result = progress_dialog.exec_()
-
 
 class ProgressBarDialog(QDialog):
-    def __init__(self, message, parent=None):
-        super(ProgressBarDialog, self).__init__(parent)
-        self.message = message
-        self.init_ui()
+    def __init__(self, message, stop: int):
+        super(ProgressBarDialog, self).__init__()
 
-    def init_ui(self):
-        self.setWindowTitle('Progress Dialog')
+        self.init_ui(message, stop)
 
-        # create a progress bar
+    def init_ui(self, message, stop: int):
+        self.setWindowTitle('Progress Bar')
         self.progress_bar = QProgressBar(self)
-        self.progress_bar.setRange(0, 100)
+        self.progress_bar.setRange(0, stop)
 
-        # Create a label
-        self.label = QLabel(self.message, self)
+        self.label = QLabel(message, self)
 
-        # Create a layout for the dialog
         layout = QVBoxLayout(self)
         layout.addWidget(self.label)
         layout.addWidget(self.progress_bar)
 
-        self.setGeometry(self.x() + 50, self.y() + 50, 300, 150)
-
     def set_progress(self, value):
-        # Set the value of the progress bar
         self.progress_bar.setValue(value)
+
+    def start_progress(self):
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self.update_progress)
+        self.timer.start(100)
+
+    def update_progress(self):
+        current_value = self.progress_bar.value()
+        new_value = current_value + 1
+        if new_value <= self.progress_bar.maximum():
+            self.set_progress(new_value)
+        else:
+            self.timer.stop()
+            self.accept()
+
+    def close_progress(self):
+        self.reject()
 
 
 if __name__ == '__main__':
@@ -199,10 +226,10 @@ if __name__ == '__main__':
 
     configs.load_config()
 
-    if not configs.get_config('setup-run') == 'true':
+    if not configs.get_config('setup-run'):
         from src import setup
 
-    configs.load_config()
+    configs.save_config()
 
     app = QApplication(sys.argv)
     window = MainWindow()
