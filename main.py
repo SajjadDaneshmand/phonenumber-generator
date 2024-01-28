@@ -38,7 +38,7 @@ class MainWindow(QMainWindow):
         number = self.ui.numberSpinBox.value()
         prefix = self.ui.prefixComboBox.currentText()
 
-        range_val = 1000
+        range_val = 100000
         divide_num = tools.divide_number(number, range_val)
 
         # set progress bar
