@@ -22,8 +22,8 @@ class MainWindow(QMainWindow):
         self.ui.numberSpinBox.setMaximum(1000000000)
 
         # btn connection
-        self.ui.numberConfirmButton.clicked.connect(self.process_from_number_patcher)
-        self.ui.phonenumberConfirmButton.clicked.connect(self.process_from_star)
+        self.ui.numberConfirmButton.clicked.connect(lambda: self.patcher('number'))
+        self.ui.phonenumberConfirmButton.clicked.connect(lambda: self.patcher('star'))
 
         # comboBox data
         prefix_data = tools.read_prefix_from_csv(settings.CSV_FILE)
@@ -33,7 +33,15 @@ class MainWindow(QMainWindow):
         self.configs = settings.JsonConfigHandler(settings.PREFIXES_FILE)
         self.configs.load_config()
 
-    def process_from_number_patcher(self):
+    def patcher(self, which_func):
+        if which_func == 'number':
+            diff_time = self.loop_adjuster()
+        else:
+            diff_time = self.process_from_star()
+        self.success_message('Successfully phone number created at {}'.format(diff_time))
+
+    @tools.func_runtime
+    def loop_adjuster(self):
         # Get data from app
         number = self.ui.numberSpinBox.value()
         prefix = self.ui.prefixComboBox.currentText()
@@ -44,7 +52,7 @@ class MainWindow(QMainWindow):
         # set progress bar
         progress_bar = ProgressBarDialog('processing...', divide_num[0] + 1)
         progress_bar.start_progress()
-        progress_bar.exec_()
+        # progress_bar.exec_()
 
         for index in range(divide_num[0]):
             addition_name = f'Item {index}'
@@ -55,8 +63,6 @@ class MainWindow(QMainWindow):
         if divide_num[1]:
             addition_name = f'last item'
             self._process_from_number(divide_num[1], prefix, addition_name)
-
-        self.success_message('Successfully phone number created!')
 
     @tools.clear_ram
     def _process_from_number(self, number, prefix, addition_name):
@@ -88,6 +94,7 @@ class MainWindow(QMainWindow):
         self.configs.set_config(prefix, raw_phonenumber)
         self.configs.save_config()
 
+    @tools.func_runtime
     @tools.clear_ram
     def process_from_star(self):
         phonenumber = self.ui.phonenumberLineEdit.text()
@@ -123,7 +130,6 @@ class MainWindow(QMainWindow):
 
         excel.save_workbook()
         excel.close_workbook()
-        self.success_message('Successfully phone number created!')
 
     @staticmethod
     def excel_initialize(filename):

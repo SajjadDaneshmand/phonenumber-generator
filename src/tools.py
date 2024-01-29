@@ -1,4 +1,6 @@
+import datetime
 import string
+import time
 import csv
 import gc
 
@@ -16,7 +18,7 @@ def check_format(phonenumber: str):
     if '*' not in phonenumber:
         return False
 
-    # check point 3
+    # check point 4
     for digit in phonenumber:
         if digit not in string.digits + '*':
             return False
@@ -58,3 +60,21 @@ def clear_ram(func):
         gc.collect()
     return wrapper
 
+
+def func_runtime(func):
+    def wrapper(*args, **kwargs):
+        first_time = time.time()
+        func(*args, **kwargs)
+        last_time = time.time()
+        return datetime.timedelta(seconds=last_time - first_time)
+
+    return wrapper
+
+
+@func_runtime
+def do():
+    for i in range(100000000):
+         continue
+
+s = do()
+print(s)
