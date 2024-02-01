@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>419</width>
+    <width>420</width>
     <height>257</height>
    </rect>
   </property>
@@ -16,7 +16,7 @@
   <widget class="QWidget" name="centralwidget">
    <layout class="QHBoxLayout" name="horizontalLayout">
     <item>
-     <widget class="QFrame" name="Format">
+     <widget class="QFrame" name="frame">
       <property name="frameShape">
        <enum>QFrame::StyledPanel</enum>
       </property>
@@ -124,10 +124,27 @@
     </item>
    </layout>
   </widget>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>420</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menusettings">
+    <property name="title">
+     <string>settings</string>
+    </property>
+    <addaction name="addPrefixMenubar"/>
+   </widget>
+   <addaction name="menusettings"/>
+  </widget>
   <widget class="QStatusBar" name="statusbar"/>
-  <action name="actionPreference">
+  <action name="addPrefixMenubar">
    <property name="text">
-    <string>Preference</string>
+    <string>add prefix</string>
    </property>
   </action>
  </widget>
