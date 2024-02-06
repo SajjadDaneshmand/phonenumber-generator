@@ -138,6 +138,7 @@
      <string>settings</string>
     </property>
     <addaction name="addPrefixMenubar"/>
+    <addaction name="deletePrefixMenubar"/>
    </widget>
    <addaction name="menusettings"/>
   </widget>
@@ -145,6 +146,11 @@
   <action name="addPrefixMenubar">
    <property name="text">
     <string>add prefix</string>
+   </property>
+  </action>
+  <action name="deletePrefixMenubar">
+   <property name="text">
+    <string>delete prefix</string>
    </property>
   </action>
  </widget>

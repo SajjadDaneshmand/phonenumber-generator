@@ -1,15 +1,17 @@
 from datetime import datetime
+import subprocess
 import sys
 import os
 
 
 from PyQt5.QtWidgets import (
-    QMainWindow, QApplication, QMessageBox, QProgressBar, QDialog, QLabel, QVBoxLayout
+    QMainWindow, QApplication
 )
-from PyQt5.QtCore import QTimer
+from PyQt5.uic import loadUi
 
 # internal
 from src.interface import Ui_MainWindow
+from src.alerts import *
 from src import settings
 from src import tools
 
@@ -24,6 +26,8 @@ class MainWindow(QMainWindow):
         # btn connection
         self.ui.numberConfirmButton.clicked.connect(lambda: self.patcher('number'))
         self.ui.phonenumberConfirmButton.clicked.connect(lambda: self.patcher('star'))
+        self.ui.addPrefixMenubar.triggered.connect(lambda: self.prefix_patcher('add'))
+        self.ui.deletePrefixMenubar.triggered.connect(lambda: self.prefix_patcher('delete'))
 
         # comboBox data
         prefix_data = tools.read_prefix_from_csv(settings.CSV_FILE)
@@ -33,15 +37,24 @@ class MainWindow(QMainWindow):
         self.configs = settings.JsonConfigHandler(settings.PREFIXES_FILE)
         self.configs.load_config()
 
+        # Alerts
+        self.alerts = Alerts()
+
     def patcher(self, which_func):
+        # set message window on a main window
+        self.alerts.message_box.setGeometry(self.x() + 50, self.y() + 50, 300, 150)
+
         if which_func == 'number':
             diff_time = self.loop_adjuster()
         else:
             diff_time = self.process_from_star()
-        self.success_message('Successfully phone number created at {}'.format(diff_time))
+        return self.alerts.info('success', 'Successfully phone number created at {}'.format(diff_time))
 
     @tools.func_runtime
     def loop_adjuster(self):
+        # set message window on a main window
+        self.alerts.message_box.setGeometry(self.x() + 50, self.y() + 50, 300, 150)
+
         # Get data from app
         number = self.ui.numberSpinBox.value()
         prefix = self.ui.prefixComboBox.currentText()
@@ -49,15 +62,9 @@ class MainWindow(QMainWindow):
         range_val = 100000
         divide_num = tools.divide_number(number, range_val)
 
-        # set progress bar
-        progress_bar = ProgressBarDialog('processing...', divide_num[0] + 1)
-        progress_bar.start_progress()
-        # progress_bar.exec_()
-
         for index in range(divide_num[0]):
             addition_name = f'Item {index}'
             self._process_from_number(range_val, prefix, addition_name)
-            progress_bar.update_progress()
 
         # remaining numbers
         if divide_num[1]:
@@ -85,7 +92,7 @@ class MainWindow(QMainWindow):
                 raw_phonenumber = tools.general_generator(raw_phonenumber)
                 main_phonenumber = prefix + raw_phonenumber
                 if len(main_phonenumber) > 11:
-                    return self.success_message('All phonenumber of this prefix created!')
+                    return self.alerts.info('success', 'All phonenumber of this prefix created!')
 
                 excel.write_data(main_phonenumber)
 
@@ -97,9 +104,12 @@ class MainWindow(QMainWindow):
     @tools.func_runtime
     @tools.clear_ram
     def process_from_star(self):
+        # set message window on a main window
+        self.alerts.message_box.setGeometry(self.x() + 50, self.y() + 50, 300, 150)
+
         phonenumber = self.ui.phonenumberLineEdit.text()
         if not tools.check_format(phonenumber):
-            self.error_message('Phone Number Format Invalid!')
+            self.alerts.error_message('Phone Number Format Invalid!')
             self.ui.phonenumberLineEdit.clear()
             return
 
@@ -130,6 +140,14 @@ class MainWindow(QMainWindow):
 
         excel.save_workbook()
         excel.close_workbook()
+
+    def prefix_patcher(self, ctype):
+        # add prefix instance
+        prefix_instance = AddPrefixWindow(ctype)
+
+        prefix_instance.setGeometry(self.x() + 50, self.y() + 50, 300, 150)
+        prefix_instance.exec_()
+        self.restart_app()
 
     @staticmethod
     def excel_initialize(filename):
@@ -163,66 +181,95 @@ class MainWindow(QMainWindow):
 
         return excel_filename
 
-    def error_message(self, msg):
-        error_box = QMessageBox()
-        error_box.setIcon(QMessageBox.Critical)
-        error_box.setWindowTitle('Error')
-        error_box.setText(msg)
-        error_box.setStandardButtons(QMessageBox.Ok)
-        error_box.setGeometry(self.x() + 50, self.y() + 50, 300, 150)
-        error_box.exec_()
-
-    def success_message(self, msg):
-        # Create a success message box
-        success_box = QMessageBox()
-        success_box.setIcon(QMessageBox.Information)
-        success_box.setWindowTitle('Success')
-        success_box.setText(msg)
-        success_box.setStandardButtons(QMessageBox.Ok)
-
-        # Set the position of the success box relative to the main window
-        success_box.setGeometry(self.x() + 50, self.y() + 50, 300, 150)
-
-        # Show the success message box
-        success_box.exec_()
+    @staticmethod
+    def restart_app():
+        python = sys.executable
+        subprocess.Popen([python] + sys.argv)
+        sys.exit()
 
 
-class ProgressBarDialog(QDialog):
-    def __init__(self, message, stop: int):
-        super(ProgressBarDialog, self).__init__()
+class AddPrefixWindow(QDialog):
+    def __init__(self, ctype):
+        super().__init__()
+        loadUi(settings.ADD_PREFIX_UI, self)
+        self.ctype = ctype
 
-        self.init_ui(message, stop)
+        # connect btn
+        self.checkButtonBox.accepted.connect(self.patcher)
+        self.checkButtonBox.rejected.connect(self._close_window)
 
-    def init_ui(self, message, stop: int):
-        self.setWindowTitle('Progress Bar')
-        self.progress_bar = QProgressBar(self)
-        self.progress_bar.setRange(0, stop)
+        # list of prefix
+        self.prefix_list = tools.read_prefix_from_csv(settings.CSV_FILE)
 
-        self.label = QLabel(message, self)
+        # This variable is for get data from Line Edit
+        self.line_text = None
 
-        layout = QVBoxLayout(self)
-        layout.addWidget(self.label)
-        layout.addWidget(self.progress_bar)
+        # Set config to json file
+        self.prefix_conf = settings.JsonConfigHandler(settings.PREFIXES_FILE)
+        self.prefix_conf.load_config()
 
-    def set_progress(self, value):
-        self.progress_bar.setValue(value)
+        # Alerts
+        self.alerts = Alerts()
 
-    def start_progress(self):
-        self.timer = QTimer(self)
-        self.timer.timeout.connect(self.update_progress)
-        self.timer.start(100)
-
-    def update_progress(self):
-        current_value = self.progress_bar.value()
-        new_value = current_value + 1
-        if new_value <= self.progress_bar.maximum():
-            self.set_progress(new_value)
+    def patcher(self):
+        if self.ctype == 'add':
+            return self.set_prefix()
         else:
-            self.timer.stop()
-            self.accept()
+            return self.delete_config()
 
-    def close_progress(self):
-        self.reject()
+    def set_prefix(self):
+        # Set the position of the success box relative to the main window
+        self.alerts.message_box.setGeometry(self.x() + 50, self.y() + 50, 300, 150)
+
+        # Get data from line edit
+        self.line_text = self.prefixLineEdit.text()
+
+        # Check prefix validation
+        if not tools.check_prefix(self.line_text):
+            return self.alerts.error_message("Your prefix is not valid!")
+
+        # check if prefix exists, don't do anything
+        if not self._prefix_exist():
+            return self.prefixLineEdit.clear()
+
+        # Set config to csv file
+        tools.to_csv(settings.CSV_FILE, self.line_text)
+
+        # add prefix to json file
+        if self.line_text in self.prefix_conf.config:
+            return self.prefixLineEdit.clear()
+
+        self.prefix_conf.set_config(self.line_text, 0)
+        self.prefix_conf.save_config()
+
+        # clear line edit
+        return self.prefixLineEdit.clear()
+
+    def delete_config(self):
+        # Set the position of the success box relative to the main window
+        self.alerts.message_box.setGeometry(self.x() + 50, self.y() + 50, 300, 150)
+
+        # Get data from line edit
+        self.line_text = self.prefixLineEdit.text()
+
+        # Check prefix validation
+        if not tools.check_prefix(self.line_text):
+            return self.alerts.error_message("Your prefix is not valid!")
+
+        # check if prefix exists, don't do anything
+        if not self._prefix_exist():
+            return self.prefixLineEdit.clear()
+
+        tools.del_from_csv(settings.CSV_FILE, self.line_text)
+        return self.prefixLineEdit.clear()
+
+    def _prefix_exist(self):
+        if self.line_text in self.prefix_list:
+            return True
+        return False
+
+    def _close_window(self):
+        self.close()
 
 
 if __name__ == '__main__':

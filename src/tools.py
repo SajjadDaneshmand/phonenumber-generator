@@ -71,10 +71,35 @@ def func_runtime(func):
     return wrapper
 
 
-@func_runtime
-def do():
-    for i in range(100000000):
-         continue
+def to_csv(path, data):
+    with open(path, 'a') as file:
+        file = csv.writer(file)
+        return file.writerow([data])
 
-s = do()
-print(s)
+
+def del_from_csv(path, data):
+    rows = []
+    with open(path, 'r') as inp:
+        for row in csv.reader(inp):
+            rows.append(row[0])
+
+    rows = rows[1:]
+    try:
+        rows.remove(data)
+    except ValueError:
+        return
+
+    corrected_rows = [[row] for row in rows]
+
+    with open(path, 'w') as out:
+        writer = csv.writer(out)
+        return writer.writerows(corrected_rows)
+
+
+def check_prefix(prefix: str):
+    prefix = prefix.strip()
+    chars = string.ascii_letters + string.punctuation
+    for char in prefix:
+        if char in chars:
+            return False
+    return True

@@ -34,7 +34,7 @@
           </widget>
          </item>
          <item alignment="Qt::AlignLeft">
-          <widget class="QLineEdit" name="lineEdit"/>
+          <widget class="QLineEdit" name="prefixLineEdit"/>
          </item>
         </layout>
        </widget>
@@ -43,7 +43,7 @@
        <widget class="QWidget" name="widget_2" native="true">
         <layout class="QHBoxLayout" name="horizontalLayout_3">
          <item alignment="Qt::AlignHCenter|Qt::AlignVCenter">
-          <widget class="QDialogButtonBox" name="buttonBox">
+          <widget class="QDialogButtonBox" name="checkButtonBox">
            <property name="standardButtons">
             <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
            </property>

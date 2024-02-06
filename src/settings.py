@@ -13,6 +13,8 @@ BASE_DIR = os.path.dirname(
 CSV_FILE = os.path.join(BASE_DIR, 'code.csv')
 PREFIXES_FILE = os.path.join(BASE_DIR, 'prefix.json')
 CONFIG_FILE = os.path.join(BASE_DIR, 'config.json')
+UI_FOLDER = os.path.join(BASE_DIR, 'src', 'ui')
+ADD_PREFIX_UI = os.path.join(UI_FOLDER, 'add-prefix.ui')
 COLUMN_TITLE = 'Phone Numbers'
 EXCEL_SUFFIX = 'xlsx'
 docs_folder = 'docs'
@@ -23,21 +25,24 @@ number_folder = 'number'
 class JsonConfigHandler:
     def __init__(self, file_path=CONFIG_FILE):
         self.file_path = file_path
-        self._config = {}
+        self.config = {}
 
     def load_config(self):
         with open(self.file_path, 'r') as file:
-            self._config = json.load(file)
+            self.config = json.load(file)
 
     def save_config(self):
         with open(self.file_path, 'w') as file:
-            json.dump(self._config, file, indent=4)
+            json.dump(self.config, file, indent=4)
 
     def set_config(self, key, value):
-        self._config[key] = value
+        self.config[key] = value
+
+    def delete_config(self, key):
+        self.config.pop(key, None)
 
     def get_config(self, key, default=None):
-        return self._config.get(key, default)
+        return self.config.get(key, default)
 
 
 class ExcelHandler:

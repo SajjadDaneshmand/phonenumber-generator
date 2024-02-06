@@ -100,7 +100,10 @@ class Ui_MainWindow(object):
         MainWindow.setStatusBar(self.statusbar)
         self.addPrefixMenubar = QtWidgets.QAction(MainWindow)
         self.addPrefixMenubar.setObjectName("addPrefixMenubar")
+        self.deletePrefixMenubar = QtWidgets.QAction(MainWindow)
+        self.deletePrefixMenubar.setObjectName("deletePrefixMenubar")
         self.menusettings.addAction(self.addPrefixMenubar)
+        self.menusettings.addAction(self.deletePrefixMenubar)
         self.menubar.addAction(self.menusettings.menuAction())
 
         self.retranslateUi(MainWindow)
@@ -119,6 +122,7 @@ class Ui_MainWindow(object):
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.autoCompeleteTab), _translate("MainWindow", "Page"))
         self.menusettings.setTitle(_translate("MainWindow", "settings"))
         self.addPrefixMenubar.setText(_translate("MainWindow", "add prefix"))
+        self.deletePrefixMenubar.setText(_translate("MainWindow", "delete prefix"))
 
 
 if __name__ == "__main__":
