@@ -5,7 +5,7 @@ import os
 
 
 from PyQt5.QtWidgets import (
-    QMainWindow, QApplication
+    QMainWindow, QApplication, QCheckBox
 )
 from PyQt5.uic import loadUi
 
@@ -22,6 +22,9 @@ class MainWindow(QMainWindow):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self.ui.numberSpinBox.setMaximum(1000000000)
+
+        # window title
+        self.setWindowTitle('Phone Number Generator')
 
         # btn connection
         self.ui.numberConfirmButton.clicked.connect(lambda: self.patcher('number'))
@@ -211,6 +214,14 @@ class AddPrefixWindow(QDialog):
         # Alerts
         self.alerts = Alerts()
 
+        # set window title
+        if self.ctype == 'add':
+            self.setWindowTitle('Add Prefix')
+        else:
+            self.setWindowTitle('Delete Prefix')
+            self.history_checkbox = QCheckBox('Delete history')
+            self.checkboxLayout.addWidget(self.history_checkbox)
+
     def patcher(self):
         if self.ctype == 'add':
             return self.set_prefix()
@@ -229,7 +240,7 @@ class AddPrefixWindow(QDialog):
             return self.alerts.error_message("Your prefix is not valid!")
 
         # check if prefix exists, don't do anything
-        if not self._prefix_exist():
+        if self._prefix_exist():
             return self.prefixLineEdit.clear()
 
         # Set config to csv file
@@ -241,6 +252,9 @@ class AddPrefixWindow(QDialog):
 
         self.prefix_conf.set_config(self.line_text, 0)
         self.prefix_conf.save_config()
+
+        # add prefix to prefix list
+        self.prefix_list.append(self.line_text)
 
         # clear line edit
         return self.prefixLineEdit.clear()
@@ -256,11 +270,15 @@ class AddPrefixWindow(QDialog):
         if not tools.check_prefix(self.line_text):
             return self.alerts.error_message("Your prefix is not valid!")
 
-        # check if prefix exists, don't do anything
+        # check if prefix doesn't exist, doesn't do anything
         if not self._prefix_exist():
             return self.prefixLineEdit.clear()
 
         tools.del_from_csv(settings.CSV_FILE, self.line_text)
+
+        # delete prefix from prefix list
+        self.prefix_list.remove(self.line_text)
+
         return self.prefixLineEdit.clear()
 
     def _prefix_exist(self):
@@ -274,12 +292,9 @@ class AddPrefixWindow(QDialog):
 
 if __name__ == '__main__':
     configs = settings.JsonConfigHandler()
-    if not os.path.exists(settings.CONFIG_FILE):
-        from src import setup
-
     configs.load_config()
 
-    if not configs.get_config('setup-run'):
+    if not os.path.exists(settings.CONFIG_FILE) or not configs.get_config('setup-run'):
         from src import setup
 
     configs.save_config()

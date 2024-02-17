@@ -28,8 +28,14 @@ def check_format(phonenumber: str):
 
 def read_prefix_from_csv(path: str):
     with open(path, 'r') as csvfile:
-        csv_reader = csv.reader(csvfile)
-        csv_values = [i[0] for i in list(csv_reader)][1:]
+        csv_reader = list(csv.reader(csvfile))[1:]
+        csv_values = []
+
+        for i in csv_reader:
+            if i:
+                csv_values.append(i[0])
+
+        csv_values.sort()
         return csv_values
 
 
@@ -72,24 +78,22 @@ def func_runtime(func):
 
 
 def to_csv(path, data):
+    data = data.strip()
     with open(path, 'a') as file:
         file = csv.writer(file)
         return file.writerow([data])
 
 
 def del_from_csv(path, data):
-    rows = []
-    with open(path, 'r') as inp:
-        for row in csv.reader(inp):
-            rows.append(row[0])
+    rows = read_prefix_from_csv(path)
 
-    rows = rows[1:]
     try:
         rows.remove(data)
     except ValueError:
         return
 
     corrected_rows = [[row] for row in rows]
+    corrected_rows.insert(0, ['code'])
 
     with open(path, 'w') as out:
         writer = csv.writer(out)
@@ -99,6 +103,9 @@ def del_from_csv(path, data):
 def check_prefix(prefix: str):
     prefix = prefix.strip()
     chars = string.ascii_letters + string.punctuation
+    if not prefix:
+        return False
+
     for char in prefix:
         if char in chars:
             return False

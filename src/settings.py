@@ -28,8 +28,11 @@ class JsonConfigHandler:
         self.config = {}
 
     def load_config(self):
-        with open(self.file_path, 'r') as file:
-            self.config = json.load(file)
+        try:
+            with open(self.file_path, 'r') as file:
+                self.config = json.load(file)
+        except FileNotFoundError:
+            return self.config
 
     def save_config(self):
         with open(self.file_path, 'w') as file:
